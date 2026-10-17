@@ -1,0 +1,10 @@
+opencollection: 1.0.0
+
+info:
+  name: k8s
+bundled: false
+extensions:
+  bruno:
+    ignore:
+      - node_modules
+      - .git
