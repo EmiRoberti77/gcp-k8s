@@ -1,0 +1,39 @@
+# Builds app_2, pushes it to Artifact Registry and deploys it to GKE.
+# Runs from the repo root, either via a trigger on push to main or manually:
+#   gcloud builds submit --config=cloudbuild.yaml --region=europe-west2 --service-account=...
+substitutions:
+  _REGION: europe-west2
+  _CLUSTER: k8s-cluster
+  _REPO: python-repo
+  _IMAGE: app-2
+
+steps:
+  - id: build
+    name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - -t
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_IMAGE}:$BUILD_ID
+      - -t
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_IMAGE}:latest
+      - app_2
+
+  - id: push
+    name: gcr.io/cloud-builders/docker
+    args:
+      - push
+      - --all-tags
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_IMAGE}
+
+  - id: deploy
+    name: gcr.io/cloud-builders/gke-deploy
+    args:
+      - run
+      - --filename=app_2/manifests
+      - --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_IMAGE}:$BUILD_ID
+      - --location=${_REGION}
+      - --cluster=${_CLUSTER}
+
+options:
+  # Required when the build runs as a user-specified service account
+  logging: CLOUD_LOGGING_ONLY
